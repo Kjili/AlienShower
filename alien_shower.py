@@ -121,28 +121,31 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 
 def process_input(key, active_ship, active_shots, ships, sky_height, num_missiles):
 	num_ships = len(ships)
+	if key == 27:
+		return False
 	# activate ship
-	if not active_ship and key.isdigit():
-		value = int(key)
+	if not active_ship and key >= 48 and key < 58:
+		value = key - 48
 		if value < num_ships and ships[value] == "inactive":
 			ships[value] = "active"
 			active_ship["pos"] = value
-			active_ship["lifetime"] = (num_ships*num_missiles)//2 + 1
+			active_ship["lifetime"] = (num_ships*num_missiles)//2
 			active_ship["base"] = value
 			active_ship["shots"] = num_missiles
 	else:
 		# move ship to the left
-		if key == "a" and active_ship["pos"] > 0:
+		if key == 97 and active_ship["pos"] > 0: #a
 			active_ship["pos"] -= 1
 			active_ship["lifetime"] -=1
 		# move ship to the right
-		if key == "d" and active_ship["pos"] < num_ships-1:
+		if key == 100 and active_ship["pos"] < num_ships-1: #d
 			active_ship["pos"] += 1
 			active_ship["lifetime"] -=1
 		# fire
-		if key == "s":
+		if key == 115: #s
 			active_shots.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
 			active_ship["shots"] -= 1
+	return True
 
 def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# init game state
@@ -158,14 +161,15 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	wait_for_start(stdscr, world)
 	# game loop
 	stdscr.clear()
-	feedback = " " * 20 + "\n" + " " * 20
+	in_game = True
 	new_game = False
+	feedback = " " * 20 + "\n" + " " * 20
 	active_ship = {}
 	active_enemy = {}
 	active_shots = []
 	clock = time.clock()
 	delta_t = 0
-	while True:
+	while in_game:
 		# time it
 		if delta_t < timeleft:
 			delta_t = time.clock() - clock
@@ -173,10 +177,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			clock = time.clock()
 			delta_t = time.clock() - clock
 			# process input
-			try: # do not throw an exception if no key is given
-				process_input(stdscr.getkey(), active_ship, active_shots, ships, sky_height, num_missiles)
-			except:
-				pass
+			in_game = process_input(stdscr.getch(), active_ship, active_shots, ships, sky_height, num_missiles)
 			# update state
 			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats)
 		# update the world
