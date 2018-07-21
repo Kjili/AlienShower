@@ -28,9 +28,13 @@ Install python on your system (2.7 and higher probably works, maybe needs
 future import, 3.6 certainly does).
 Clone the project, change to the directory and run the game in a Linux shell:
 
+.. code-block::
+
 	python alien_shower.py
 
 For more information, run:
+
+.. code-block::
 
 	python alien_shower.py -h
 
