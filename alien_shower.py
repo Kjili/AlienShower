@@ -96,10 +96,9 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			feedback = "alien destroyed     "
 			continue
 		# handle world-border reached
-		# TODO end game on wasted shot (only with a message!)
 		elif active_shots[i]["pos_y"] < 0:
-			del active_shots[i]
-			continue
+			stats["losses"] += 1
+			return True, "missed shot          \ndestroyed by aliens "
 		else:
 			active_shots[i]["pos_y"] -= 1
 		i += 1
