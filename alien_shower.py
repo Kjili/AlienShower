@@ -3,111 +3,185 @@ import time
 import random
 import argparse
 
-parser = argparse.ArgumentParser(description="A kind of space invader tetris mix.")
-parser.add_argument("--ships", type=int, default=5, help="the number of ships")
-parser.add_argument("--sky", type=int, default=4, help="the sky height")
-parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship")
-args = parser.parse_args()
+def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0):
+	# init ships
+	ships = []
+	for i in range(num_ships):
+		ships.append("inactive")
 
-# set params
-num_ships = args.ships
-sky_height = args.sky
-num_missiles = args.missiles
+	# init enemies (as positions they will appear at)
+	enemy_appearance = list(range(num_ships)) * num_missiles
+	random.shuffle(enemy_appearance)
 
-# init ships
-ships = []
-for i in range(num_ships):
-	ships.append("inactive")
-
-# init enemies (as positions they will appear at)
-enemy_appearance = list(range(num_ships)) * num_missiles
-random.shuffle(enemy_appearance)
-
-# init world
-world = []
-width = num_ships*3 + num_ships - 1
-world.append(" " * width)
-world.append("_" * width)
-for i in range(sky_height):
-	world.append("   " * width)
-world.append("." * width)
-world.append(" ".join(" w " for i in range(num_ships)))
-world.append(" ".join(f"({i})" for i in range(num_ships)))
-
-def update_world(active_ship, active_enemy, active_shot):
-	world.clear()
-	world.append(" ".join(" m " if enemy_appearance and enemy_appearance[-1] == i else "   " for i in range(num_ships)))
+	# init world
+	world = []
+	width = num_ships*3 + num_ships - 1
+	world.append(f"wins: {wins}, losses: {losses}")
+	world.append(" ")
+	world.append(" " * width)
 	world.append("_" * width)
+	for i in range(sky_height):
+		world.append("   " * width)
+	world.append("." * width)
+	world.append(" ".join(" w " for i in range(num_ships)))
+	world.append(" ".join(f"({i})" for i in range(num_ships)))
+	world.append(" ")
+	world.append(f"life: {0}, shots: {0}")
+
+	return ships, enemy_appearance, world
+
+def show_help(stdscr, num_missiles):
+	stdscr.clear()
+	while stdscr.getch() == -1:
+		stdscr.addstr(0, 0, "Welcome to Alien Shower.")
+		stdscr.addstr(1, 0, "Your task is to protect the earth from incoming aliens.")
+		stdscr.addstr(2, 0, "You can activate any ship by pressing the respective number.")
+		stdscr.addstr(3, 0, "You can steer left and right by pressing \"a\" or \"d\".")
+		stdscr.addstr(4, 0, "You can shoot by pressing \"s\".")
+		stdscr.addstr(5, 0, "Be warned, though:")
+		stdscr.addstr(6, 0, "Any missed shot will result in destruction.")
+		stdscr.addstr(7, 0, "Your ships can only move so far.")
+		stdscr.addstr(8, 0, f"Your ships can only fire {num_missiles} times.")
+		stdscr.addstr(9, 0, "You may only have one ship active at a time.")
+		stdscr.addstr(10, 0, "Have fun!")
+		stdscr.addstr(11, 0, "(Press a key to resume, press another to start...)")
+		stdscr.refresh()
+
+def wait_for_start(stdscr, world):
+	stdscr.clear()
+	while stdscr.getch() == -1:
+		for i, line in enumerate(world):
+			stdscr.addstr(i, 0, line)
+		stdscr.refresh()
+
+def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats):
+	num_ships = len(ships)
+	world.clear()
+	world.append(f"wins: {stats['wins']}, losses: {stats['losses']}")
+	world.append(" ")
+	world.append(" ".join(" m " if enemy_appearance and enemy_appearance[-1] == i else "   " for i in range(num_ships)))
+	world.append("_" * len(world[-1]))
 	for j in range(sky_height):
-		world.append(" ".join(" * " if active_shot and any(pos["pos_x"] == i and pos["pos_y"] == j for pos in active_shot) else " m " if active_enemy and active_enemy["pos_x"] == i and active_enemy["pos_y"] == j else "   " for i in range(num_ships)))
+		world.append(" ".join(" * " if active_shots and any(pos["pos_x"] == i and pos["pos_y"] == j for pos in active_shots)
+								else " m " if active_enemy and active_enemy["pos_x"] == i and active_enemy["pos_y"] == j
+								else "   " for i in range(num_ships)))
 	world.append(".".join(".w." if active_ship and active_ship["pos"] == i else "..." for i in range(num_ships)))
 	world.append(" ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships)))
 	world.append(" ".join(f"({i})" for i in range(num_ships)))
+	world.append(" ")
+	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}")
 
-def update_objects(active_enemy, active_shot):
-	for shot in active_shot:
-		if active_enemy and shot["pos_x"] == active_enemy["pos_x"] and shot["pos_y"] == active_enemy["pos_y"]:
-			active_enemy = None
-			shot["pos_y"] = -1
-		if shot["pos_y"] >= 0:
-			shot["pos_y"] -= 1
-		if active_enemy and shot["pos_x"] == active_enemy["pos_x"] and shot["pos_y"] == active_enemy["pos_y"]:
-			active_enemy = None
-			shot["pos_y"] = -1
+def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats):
+	# check ship lifetime
+	 # TODO end game on wasted shot (only with a message!)
+	if active_ship and (active_ship["lifetime"] <= 0 or active_ship["shots"] <= 0):
+		ships[active_ship["base"]] = "wracked"
+		active_ship.clear()
+	# move shots
+	for i in range(len(active_shots)):
+		# handle hit
+		if active_enemy and (active_shots[i]["pos_x"] == active_enemy["pos_x"] and active_shots[i]["pos_y"] == active_enemy["pos_y"]
+		or active_shots[i]["pos_x"] == active_enemy["pos_x"] and active_shots[i]["pos_y"]-1 == active_enemy["pos_y"]):
+			active_enemy.clear()
+			del active_shots[i]
+			i -= 1
+		# handle world-border reached
+		elif active_shots[i]["pos_y"] <= 0:
+			del active_shots[i]
+			i -= 1
+		else:
+			active_shots[i]["pos_y"] -= 1
+	# move enemy
 	if active_enemy:
 		active_enemy["pos_y"] += 1
-		if active_enemy["pos_y"] > sky_height:
-			# loss
-			pass
-	if not active_enemy:
+		if active_enemy["pos_y"] >= sky_height:
+			stats["losses"] += 1
+			return True
+	else:
+		# set new enemy if in store
 		if enemy_appearance:
-			active_enemy = {"pos_x": enemy_appearance.pop(), "pos_y": 0}
+			active_enemy["pos_x"] = enemy_appearance.pop()
+			active_enemy["pos_y"] = 0
 		else:
-			# win
-			pass
-	return active_enemy, active_shot
+			stats["wins"] += 1
+			return True
+	return False
 
-def process_input(key, active_ship, active_shot):
-	if key.isdigit():
+def process_input(key, active_ship, active_shots, ships, sky_height, num_missiles):
+	num_ships = len(ships)
+	# activate ship
+	if not active_ship and key.isdigit():
 		value = int(key)
-		if value < num_ships and not "active" in ships and ships[value] == "inactive":
+		if value < num_ships and ships[value] == "inactive":
 			ships[value] = "active"
-			active_ship = {"pos": value, "lifetime": (num_ships*num_missiles)/2, "base": value, "shots": num_missiles}
-	if active_ship:
+			active_ship["pos"] = value
+			active_ship["lifetime"] = (num_ships*num_missiles)//2 + 1
+			active_ship["base"] = value
+			active_ship["shots"] = num_missiles
+	else:
+		# move ship to the left
 		if key == "a" and active_ship["pos"] > 0:
 			active_ship["pos"] -= 1
 			active_ship["lifetime"] -=1
+		# move ship to the right
 		if key == "d" and active_ship["pos"] < num_ships-1:
 			active_ship["pos"] += 1
 			active_ship["lifetime"] -=1
+		# fire
 		if key == "s":
-			#shoot
-			active_shot.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
+			active_shots.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
 			active_ship["shots"] -= 1
-		if active_ship["lifetime"] <= 0 or active_ship["shots"] <= 0:
-			ships[active_ship["base"]] = "wracked"
-			active_ship = None
-	return active_ship, active_shot
 
-def main(stdscr):
-	stdscr.nodelay(True) # don't wait for input
-	active_ship = None
-	active_enemy = None
-	active_shot = []
+def game(stdscr, num_ships, sky_height, num_missiles, no_help):
+	# init game state
+	stats = {"wins": 0, "losses": 0}
+	ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles)
+	# don't wait for input (while showing a black input screen)
+	stdscr.nodelay(True)
+	# show help and initial world and wait for user input (any key) to start
+	if not no_help:
+		show_help(stdscr, num_missiles)
+	wait_for_start(stdscr, world)
+	# game loop
+	stdscr.clear()
+	active_ship = {}
+	active_enemy = {}
+	active_shots = []
 	while True:
-		# draw the world
-		stdscr.clear()
-		for i, line in enumerate(world):
-			stdscr.addstr(line + "\n")#i, 0, line)
-		stdscr.refresh()
-		# sleep
-		time.sleep(1)
+		# process input
 		try: # do not throw an exception if no key is given
-			active_ship, active_shot = process_input(stdscr.getkey(), active_ship, active_shot)
+			process_input(stdscr.getkey(), active_ship, active_shots, ships, sky_height, num_missiles)
 		except:
 			pass
-		active_enemy, active_shot = update_objects(active_enemy, active_shot)
+		# update state
+		new_game = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats)
 		# update the world
-		update_world(active_ship, active_enemy, active_shot)
+		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats)
+		# draw the world
+		for i, line in enumerate(world):
+			stdscr.addstr(i, 0, line)
+		stdscr.refresh()
+		# check for new game
+		if new_game:
+			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"])
+			active_ship = {}
+			active_enemy = {}
+			active_shots = []
+			wait_for_start(stdscr, world)
+		# sleep
+		time.sleep(1)
 
-curses.wrapper(main)
+def run(num_ships=5, sky_height=4, num_missiles=2, no_help=False):
+	curses.wrapper(game, num_ships, sky_height, num_missiles, no_help)
+
+def main():
+	parser = argparse.ArgumentParser(description="A kind of space invader tetris mix.")
+	parser.add_argument("--ships", type=int, default=5, help="the number of ships")
+	parser.add_argument("--sky", type=int, default=4, help="the sky height")
+	parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship")
+	parser.add_argument("--no_help", action="store_true", help="deactivate help")
+	args = parser.parse_args()
+	run(args.ships, args.sky, args.missiles, args.no_help)
+
+if __name__ == "__main__":
+	main()
