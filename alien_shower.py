@@ -3,7 +3,7 @@ import time
 import random
 import argparse
 
-def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0):
+def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" " * 20 + "\n" + " " * 20):
 	# init ships
 	ships = []
 	for i in range(num_ships):
@@ -17,7 +17,7 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0):
 	world = []
 	width = num_ships*3 + num_ships - 1
 	world.append(f"wins: {wins}, losses: {losses}")
-	world.append(" ")
+	world.append("")
 	world.append(" " * width)
 	world.append("_" * width)
 	for i in range(sky_height):
@@ -25,8 +25,11 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0):
 	world.append("." * width)
 	world.append(" ".join(" w " for i in range(num_ships)))
 	world.append(" ".join(f"({i})" for i in range(num_ships)))
-	world.append(" ")
+	world.append("")
+	world.append(f"time left: 0.0")
 	world.append(f"life: {0}, shots: {0}")
+	world.append("")
+	world.append(feedback)
 
 	return ships, enemy_appearance, world
 
@@ -43,8 +46,9 @@ def show_help(stdscr, num_missiles):
 		stdscr.addstr(7, 0, "Your ships can only move so far.")
 		stdscr.addstr(8, 0, f"Your ships can only fire {num_missiles} times.")
 		stdscr.addstr(9, 0, "You may only have one ship active at a time.")
-		stdscr.addstr(10, 0, "Have fun!")
-		stdscr.addstr(11, 0, "(Press a key to resume, press another to start...)")
+		stdscr.addstr(10, 0, "So look at where the next enemy will come from and plan ahead - but don't take too much time.")
+		stdscr.addstr(11, 0, "Have fun!")
+		stdscr.addstr(12, 0, "(Press a key to resume, press another to start...)")
 		stdscr.refresh()
 
 def wait_for_start(stdscr, world):
@@ -54,11 +58,11 @@ def wait_for_start(stdscr, world):
 			stdscr.addstr(i, 0, line)
 		stdscr.refresh()
 
-def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats):
+def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback):
 	num_ships = len(ships)
 	world.clear()
 	world.append(f"wins: {stats['wins']}, losses: {stats['losses']}")
-	world.append(" ")
+	world.append("")
 	world.append(" ".join(" m " if enemy_appearance and enemy_appearance[-1] == i else "   " for i in range(num_ships)))
 	world.append("_" * len(world[-1]))
 	for j in range(sky_height):
@@ -68,35 +72,43 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append(".".join(".w." if active_ship and active_ship["pos"] == i else "..." for i in range(num_ships)))
 	world.append(" ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships)))
 	world.append(" ".join(f"({i})" for i in range(num_ships)))
-	world.append(" ")
+	world.append("")
+	world.append(f"time left: {countdown:.1f}")
 	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}")
+	world.append("")
+	world.append(feedback)
 
 def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats):
+	feedback = " " * 20
 	# check ship lifetime
-	 # TODO end game on wasted shot (only with a message!)
 	if active_ship and (active_ship["lifetime"] <= 0 or active_ship["shots"] <= 0):
 		ships[active_ship["base"]] = "wracked"
 		active_ship.clear()
+		feedback = "ship wracked        "
 	# move shots
-	for i in range(len(active_shots)):
+	i = 0
+	while i < len(active_shots):
 		# handle hit
 		if active_enemy and (active_shots[i]["pos_x"] == active_enemy["pos_x"] and active_shots[i]["pos_y"] == active_enemy["pos_y"]
 		or active_shots[i]["pos_x"] == active_enemy["pos_x"] and active_shots[i]["pos_y"]-1 == active_enemy["pos_y"]):
 			active_enemy.clear()
 			del active_shots[i]
-			i -= 1
+			feedback = "alien destroyed     "
+			continue
 		# handle world-border reached
-		elif active_shots[i]["pos_y"] <= 0:
+		# TODO end game on wasted shot (only with a message!)
+		elif active_shots[i]["pos_y"] < 0:
 			del active_shots[i]
-			i -= 1
+			continue
 		else:
 			active_shots[i]["pos_y"] -= 1
+		i += 1
 	# move enemy
 	if active_enemy:
 		active_enemy["pos_y"] += 1
 		if active_enemy["pos_y"] >= sky_height:
 			stats["losses"] += 1
-			return True
+			return True, feedback + "\ndestroyed by aliens "
 	else:
 		# set new enemy if in store
 		if enemy_appearance:
@@ -104,8 +116,8 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			active_enemy["pos_y"] = 0
 		else:
 			stats["wins"] += 1
-			return True
-	return False
+			return True, feedback + "\nall aliens destroyed"
+	return False, feedback + "\n" + " " * 20
 
 def process_input(key, active_ship, active_shots, ships, sky_height, num_missiles):
 	num_ships = len(ships)
@@ -132,56 +144,70 @@ def process_input(key, active_ship, active_shots, ships, sky_height, num_missile
 			active_shots.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
 			active_ship["shots"] -= 1
 
-def game(stdscr, num_ships, sky_height, num_missiles, no_help):
+def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# init game state
 	stats = {"wins": 0, "losses": 0}
 	ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles)
 	# don't wait for input (while showing a black input screen)
 	stdscr.nodelay(True)
+	# hide cursor
+	curses.curs_set(0)
 	# show help and initial world and wait for user input (any key) to start
 	if not no_help:
 		show_help(stdscr, num_missiles)
 	wait_for_start(stdscr, world)
 	# game loop
 	stdscr.clear()
+	feedback = " " * 20 + "\n" + " " * 20
+	new_game = False
 	active_ship = {}
 	active_enemy = {}
 	active_shots = []
+	clock = time.clock()
+	delta_t = 0
 	while True:
-		# process input
-		try: # do not throw an exception if no key is given
-			process_input(stdscr.getkey(), active_ship, active_shots, ships, sky_height, num_missiles)
-		except:
-			pass
-		# update state
-		new_game = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats)
+		# time it
+		if delta_t < timeleft:
+			delta_t = time.clock() - clock
+		else:
+			clock = time.clock()
+			delta_t = time.clock() - clock
+			# process input
+			try: # do not throw an exception if no key is given
+				process_input(stdscr.getkey(), active_ship, active_shots, ships, sky_height, num_missiles)
+			except:
+				pass
+			# update state
+			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats)
 		# update the world
-		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats)
+		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, timeleft - delta_t, feedback)
 		# draw the world
 		for i, line in enumerate(world):
 			stdscr.addstr(i, 0, line)
 		stdscr.refresh()
 		# check for new game
 		if new_game:
-			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"])
+			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
+			new_game = False
 			active_ship = {}
 			active_enemy = {}
 			active_shots = []
 			wait_for_start(stdscr, world)
-		# sleep
-		time.sleep(1)
+			clock = time.clock()
+			delta_t = 0
 
-def run(num_ships=5, sky_height=4, num_missiles=2, no_help=False):
-	curses.wrapper(game, num_ships, sky_height, num_missiles, no_help)
+def run(num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
+	curses.wrapper(game, num_ships, sky_height, num_missiles, speed, no_help)
 
 def main():
 	parser = argparse.ArgumentParser(description="A kind of space invader tetris mix.")
 	parser.add_argument("--ships", type=int, default=5, help="the number of ships")
 	parser.add_argument("--sky", type=int, default=4, help="the sky height")
 	parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship")
+	parser.add_argument("--speed", type=int, default=1, help="the countdown for movement decisions and the amount of time enemies and bullets require to move")
 	parser.add_argument("--no_help", action="store_true", help="deactivate help")
 	args = parser.parse_args()
-	run(args.ships, args.sky, args.missiles, args.no_help)
+	run(args.ships, args.sky, args.missiles, args.speed, args.no_help)
 
 if __name__ == "__main__":
 	main()
