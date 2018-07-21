@@ -196,12 +196,21 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			wait_for_start(stdscr, world)
 			clock = time.clock()
 			delta_t = 0
+	# show goodbye screen
+	stdscr.clear()
+	while stdscr.getch() == -1:
+		stdscr.addstr(0, 0, "Thanks for playing Alien Shower.")
+		stdscr.addstr(1, 0, "Your final score:")
+		stdscr.addstr(2, 0, f"{stats['wins']} wins to {stats['losses']} losses.")
+		stdscr.addstr(3, 0, "Bye!")
+		stdscr.addstr(4, 0, "(Press a key to quit)")
+		stdscr.refresh()
 
 def run(num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
 	curses.wrapper(game, num_ships, sky_height, num_missiles, speed, no_help)
 
 def main():
-	parser = argparse.ArgumentParser(description="A kind of space invader tetris mix.")
+	parser = argparse.ArgumentParser(description="A kind of round-based space invader tetris mix.")
 	parser.add_argument("--ships", type=int, default=5, help="the number of ships")
 	parser.add_argument("--sky", type=int, default=4, help="the sky height")
 	parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship")
