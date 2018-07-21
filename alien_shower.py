@@ -151,7 +151,7 @@ def process_input(key, active_ship, active_shots, ships, sky_height, num_missile
 			active_ship["lifetime"] = (num_ships*num_missiles)//2
 			active_ship["base"] = value
 			active_ship["shots"] = num_missiles
-	else:
+	if active_ship:
 		# move ship to the left
 		if key == 97 and active_ship["pos"] > 0: #a
 			active_ship["pos"] -= 1
