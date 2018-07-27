@@ -65,10 +65,12 @@ def show_help(stdscr, num_missiles):
 		stdscr.addstr(7, 0, "Your ships can only move so far.")
 		stdscr.addstr(8, 0, f"Your ships can only fire {num_missiles} times.")
 		stdscr.addstr(9, 0, "You may only have one ship active at a time.")
-		stdscr.addstr(10, 0, "So look at where the next enemy will come from and plan ahead.")
-		stdscr.addstr(11, 0, "But don't take too much time.")
-		stdscr.addstr(12, 0, "Have fun!")
-		stdscr.addstr(13, 0, "(Press a key to resume, press another to start...)")
+		stdscr.addstr(10, 0, "Once it is wracked you may activate a new one. You cannot deactivate a ship.")
+		stdscr.addstr(11, 0, "So look ahead to where the next enemy will come from and plan your move.")
+		stdscr.addstr(12, 0, "But don't take too much time.")
+		stdscr.addstr(13, 0, "Have fun!")
+		stdscr.addstr(14, 0, "(Press escape to end the game and view your score.)")
+		stdscr.addstr(15, 0, "(Press a key to resume now, press another to start...)")
 		stdscr.refresh()
 
 def wait_for_start(stdscr, world):
