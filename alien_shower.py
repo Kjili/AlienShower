@@ -103,10 +103,16 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats):
 	feedback = " " * 20
 	# check ship lifetime
-	if active_ship and (active_ship["lifetime"] <= 0 or active_ship["shots"] <= 0):
-		ships[active_ship["base"]] = "wracked"
-		active_ship.clear()
-		feedback = "ship wracked        "
+	if active_ship:
+		# based on movement and if a shot remains, loose the game
+		if active_ship["lifetime"] <= 0 and active_ship["shots"] > 0:
+			stats["losses"] += 1
+			return True, "ship wracked early  \ndestroyed by aliens "
+		# based on shots
+		if active_ship["shots"] <= 0:
+			ships[active_ship["base"]] = "wracked"
+			active_ship.clear()
+			feedback = "ship wracked        "
 	# move shots
 	i = 0
 	while i < len(active_shots):
@@ -117,16 +123,18 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			del active_shots[i]
 			feedback = "alien destroyed     "
 			continue
-		# handle world-border reached
+		# handle world-border reached, loose the game
 		elif active_shots[i]["pos_y"] < 0:
 			stats["losses"] += 1
 			return True, "missed shot          \ndestroyed by aliens "
+		# handle move
 		else:
 			active_shots[i]["pos_y"] -= 1
 		i += 1
 	# move enemy
 	if active_enemy:
 		active_enemy["pos_y"] += 1
+		# loose the game
 		if active_enemy["pos_y"] >= sky_height:
 			stats["losses"] += 1
 			return True, feedback + "\ndestroyed by aliens "
@@ -135,6 +143,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		if enemy_appearance:
 			active_enemy["pos_x"] = enemy_appearance.pop()
 			active_enemy["pos_y"] = 0
+		# win the game
 		else:
 			stats["wins"] += 1
 			return True, feedback + "\nall aliens destroyed"
