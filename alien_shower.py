@@ -237,18 +237,39 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		stdscr.addstr(4, 0, "(Press a key to quit)")
 		stdscr.refresh()
 
-def run(num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
+def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
+	if difficulty == "easy":
+		num_ships=5
+		sky_height=8
+		num_missiles=2
+		speed=1
+	if difficulty == "normal":
+		num_ships=5
+		sky_height=4
+		num_missiles=2
+		speed=1
+	if difficulty == "hard":
+		num_ships=10
+		sky_height=4 # will be overwritten
+		num_missiles=2
+		speed=0.5
+	if difficulty == "brainfuck":
+		num_ships=10
+		sky_height=4 # will be overwritten
+		num_missiles=3
+		speed=0.3
 	curses.wrapper(game, num_ships, sky_height, num_missiles, speed, no_help)
 
 def main():
 	parser = argparse.ArgumentParser(description="A kind of round-based space invader tetris mix.")
-	parser.add_argument("--ships", choices=[2, 3, 4, 5, 6, 7, 8, 9, 10], type=int, default=5, help="the number of ships")
-	parser.add_argument("--sky", type=int, default=4, help="the sky height")
-	parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship")
-	parser.add_argument("--speed", type=int, default=1, help="the countdown for movement decisions and the amount of time enemies and bullets require to move")
+	parser.add_argument("--difficulty", choices=["easy", "normal", "hard", "brainfuck", "custom"], default="custom", help="the difficulty which predefines the number of ships, sky height, missiles and speed and overwrites their values unless set to custom")
+	parser.add_argument("--ships", choices=[2, 3, 4, 5, 6, 7, 8, 9, 10], type=int, default=5, help="the number of ships (will be overwritten unless the difficulty is set to custom)")
+	parser.add_argument("--sky", type=int, default=4, help="the sky height (will be overwritten unless the difficulty is set to custom or if the game would be unplayable)")
+	parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship (will be overwritten unless the difficulty is set to custom)")
+	parser.add_argument("--speed", type=int, default=1, help="the countdown for movement decisions and the amount of time enemies and bullets require to move (will be overwritten unless the difficulty is set to custom)")
 	parser.add_argument("--no_help", action="store_true", help="deactivate help")
 	args = parser.parse_args()
-	run(args.ships, args.sky, args.missiles, args.speed, args.no_help)
+	run(args.difficulty, args.ships, args.sky, args.missiles, args.speed, args.no_help)
 
 if __name__ == "__main__":
 	main()
