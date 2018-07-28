@@ -43,7 +43,7 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" 
 		world.append("   " * width)
 	world.append("." * width)
 	world.append(" ".join(" w " for i in range(num_ships)))
-	world.append(" ".join(f"({i})" for i in range(num_ships)))
+	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
 	world.append("")
 	world.append(f"time left: 0.0")
 	world.append(f"life: {0}, shots: {0}")
@@ -93,7 +93,7 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 								else "   " for i in range(num_ships)))
 	world.append(".".join(".w." if active_ship and active_ship["pos"] == i else "..." for i in range(num_ships)))
 	world.append(" ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships)))
-	world.append(" ".join(f"({i})" for i in range(num_ships)))
+	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
 	world.append("")
 	world.append(f"time left: {countdown:.1f}")
 	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}")
@@ -146,12 +146,12 @@ def process_input(key, active_ship, active_shots, ships, sky_height, num_missile
 		return False
 	# activate ship
 	if not active_ship and key >= 48 and key < 58:
-		value = key - 48
+		value = key - 49
 		if value < num_ships and ships[value] == "inactive":
 			ships[value] = "active"
-			active_ship["pos"] = value
+			active_ship["pos"] = value if value >= 0 else len(ships) - 1
 			active_ship["lifetime"] = (num_ships*num_missiles)//2
-			active_ship["base"] = value
+			active_ship["base"] = value if value >= 0 else len(ships) - 1
 			active_ship["shots"] = num_missiles
 	if active_ship:
 		# move ship to the left
@@ -233,7 +233,7 @@ def run(num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
 
 def main():
 	parser = argparse.ArgumentParser(description="A kind of round-based space invader tetris mix.")
-	parser.add_argument("--ships", type=int, default=5, help="the number of ships")
+	parser.add_argument("--ships", choices=[2, 3, 4, 5, 6, 7, 8, 9, 10], type=int, default=5, help="the number of ships")
 	parser.add_argument("--sky", type=int, default=4, help="the sky height")
 	parser.add_argument("--missiles", type=int, default=2, help="the number of missiles of each ship")
 	parser.add_argument("--speed", type=int, default=1, help="the countdown for movement decisions and the amount of time enemies and bullets require to move")
