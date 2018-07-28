@@ -171,6 +171,7 @@ def process_input(key, active_ship, active_shots, ships, sky_height, num_missile
 def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# init game state
 	stats = {"wins": 0, "losses": 0}
+	sky_height = max(sky_height, num_ships-1) # adjust sky height to minimum to be able to win
 	ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles)
 	# don't wait for input (while showing a black input screen)
 	stdscr.nodelay(True)
