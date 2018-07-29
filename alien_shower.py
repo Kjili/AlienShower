@@ -178,6 +178,11 @@ def process_input(key, active_ship, active_shots, ships, sky_height, num_missile
 	return True
 
 def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
+	# check for sky height plus game stats not exceeding terminal height
+	# as curses crashes with an error if the cursor moves out of the screen
+	scr_height, _ = stdscr.getmaxyx()
+	if scr_height < sky_height + 13:
+		raise argparse.ArgumentTypeError(f"argument --sky: invalid size: {sky_height} (must fit into your terminal, either resize it's height or reduce the sky_height to a maximum of {scr_height - 13})")
 	# init game state
 	stats = {"wins": 0, "losses": 0}
 	sky_height = max(sky_height, num_ships-1) # adjust sky height to minimum to be able to win
