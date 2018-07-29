@@ -238,6 +238,8 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		stdscr.refresh()
 
 def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
+	if num_ships < 2 or num_ships > 10:
+		raise argparse.ArgumentTypeError(f"argument --ships: invalid choice: {num_ships} (choose from 2, 3, 4, 5, 6, 7, 8, 9, 10)")
 	if difficulty == "easy":
 		num_ships=5
 		sky_height=8
