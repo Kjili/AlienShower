@@ -203,15 +203,15 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	active_ship = {}
 	active_enemy = {}
 	active_shots = []
-	clock = time.clock()
+	clock = time.perf_counter()
 	delta_t = 0
 	while in_game:
 		# time it
 		if delta_t < timeleft:
-			delta_t = time.clock() - clock
+			delta_t = time.perf_counter() - clock
 		else:
-			clock = time.clock()
-			delta_t = time.clock() - clock
+			clock = time.perf_counter()
+			delta_t = 0
 			# process input
 			in_game = process_input(stdscr.getch(), active_ship, active_shots, ships, sky_height, num_missiles)
 			# update state
@@ -230,7 +230,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			active_enemy = {}
 			active_shots = []
 			wait_for_start(stdscr, world)
-			clock = time.clock()
+			clock = time.perf_counter()
 			delta_t = 0
 	# show goodbye screen
 	stdscr.clear()
