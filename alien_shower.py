@@ -108,7 +108,7 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append("")
 	world.append(feedback)
 
-def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action):
+def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats):
 	feedback = " " * 20
 
 	### process input ###
@@ -126,6 +126,8 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		active_ship["base"] = value if value >= 0 else num_ships - 1
 		active_ship["shots"] = num_missiles
 		feedback = "ship activated      "
+		final_stats["ships lifetime expired"][1] += 1
+		final_stats["moves made"][1] += active_ship["lifetime"]
 	# move the ship
 	elif next_action[0] == "move":
 		if next_action[1] == "left":
@@ -134,10 +136,12 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		if next_action[1] == "right":
 			active_ship["pos"] += 1
 			active_ship["lifetime"] -=1
+		final_stats["moves made"][0] += 1
 	# fire
 	elif next_action[0] == "shoot":
 		active_shots.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
 		active_ship["shots"] -= 1
+		final_stats["missed shots"][1] += 1
 
 	### update game state ###
 
@@ -148,6 +152,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			ships[active_ship["base"]] = "wracked"
 			active_ship.clear()
 			stats["losses"] += 1
+			final_stats["ships lifetime expired"][0] += 1
 			return True, "ship life expired   \ndestroyed by aliens "
 		# based on shots
 		if active_ship["shots"] <= 0:
@@ -164,10 +169,12 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			del active_shots[i]
 			stats["destroyed"] += 1
 			feedback = "alien destroyed     "
+			final_stats["aliens destroyed"][0] += 1
 			continue
 		# handle world-border reached, loose the game
 		elif active_shots[i]["pos_y"] < 0:
 			stats["losses"] += 1
+			final_stats["missed shots"][0] += 1
 			return True, "missed shot          \ndestroyed by aliens "
 		# handle move
 		else:
@@ -179,15 +186,18 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		# loose the game
 		if active_enemy["pos_y"] >= sky_height:
 			stats["losses"] += 1
+			final_stats["missed defence"][0] += 1
 			return True, "missing defence      \ndestroyed by aliens "
 	else:
 		# set new enemy if in store
 		if enemy_appearance:
 			active_enemy["pos_x"] = enemy_appearance.pop()
 			active_enemy["pos_y"] = 0
+			final_stats["aliens destroyed"][1] += 1
 		# win the game
 		else:
 			stats["wins"] += 1
+			final_stats["missed defence"][1] += 1
 			return True, feedback + "\nall aliens destroyed"
 	return False, feedback + "\n" + " " * 20
 
@@ -222,6 +232,13 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		raise argparse.ArgumentTypeError(f"argument --sky: invalid size: {sky_height} (must fit into your terminal, either resize it's height or reduce the sky_height to a maximum of {scr_height - 15})")
 	# init game state
 	stats = {"wins": 0, "losses": 0, "destroyed": 0}
+	final_stats = {
+		"aliens destroyed": [0, 0],
+		"moves made": [0, 0],
+		"missed defence": [0, 0],
+		"missed shots": [0, 0],
+		"ships lifetime expired": [0, 0]
+	}
 	sky_height = max(sky_height, num_ships-1) # adjust sky height to minimum to be able to win
 	ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles)
 	# don't wait for input (while showing a black input screen)
@@ -249,7 +266,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		# update game state on next step
 		if delta_t >= timeleft:
 			# update state
-			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action)
+			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats)
 			# clear action
 			next_action = ()
 			# renew clock
@@ -284,8 +301,14 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		stdscr.addstr(0, 0, "Thanks for playing Alien Shower.")
 		stdscr.addstr(1, 0, "Your final score:")
 		stdscr.addstr(2, 0, f"{stats['wins']} wins to {stats['losses']} losses.")
-		stdscr.addstr(3, 0, "Bye!")
-		stdscr.addstr(4, 0, "(Press a key to quit)")
+		stdscr.addstr(3, 0, "")
+		row = 3
+		for key in final_stats:
+			row += 1
+			stdscr.addstr(row, 0, f"Total {key}: {final_stats[key][0]} of {final_stats[key][1]}")
+		stdscr.addstr(row + 1, 0, "")
+		stdscr.addstr(row + 2, 0, "Bye!")
+		stdscr.addstr(row + 3, 0, "(Press a key to quit)")
 		stdscr.refresh()
 
 def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
