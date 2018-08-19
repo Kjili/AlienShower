@@ -36,6 +36,7 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" 
 	world = []
 	width = num_ships*3 + num_ships - 1
 	world.append(f"wins: {wins}, losses: {losses}")
+	world.append("aliens destroyed: 0  ")
 	world.append("")
 	world.append(" " * width)
 	world.append("_" * width)
@@ -88,6 +89,7 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	num_ships = len(ships)
 	world.clear()
 	world.append(f"wins: {stats['wins']}, losses: {stats['losses']}")
+	world.append(f"aliens destroyed: {stats['destroyed']}")
 	world.append("")
 	world.append(" ".join(" m " if enemy_appearance and enemy_appearance[-1] == i else "   " for i in range(num_ships)))
 	world.append("_" * len(world[-1]))
@@ -125,6 +127,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		or active_shots[i]["pos_x"] == active_enemy["pos_x"] and active_shots[i]["pos_y"]-1 == active_enemy["pos_y"]):
 			active_enemy.clear()
 			del active_shots[i]
+			stats["destroyed"] += 1
 			feedback = "alien destroyed     "
 			continue
 		# handle world-border reached, loose the game
@@ -185,10 +188,10 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# check for sky height plus game stats not exceeding terminal height
 	# as curses crashes with an error if the cursor moves out of the screen
 	scr_height, _ = stdscr.getmaxyx()
-	if scr_height < sky_height + 13:
-		raise argparse.ArgumentTypeError(f"argument --sky: invalid size: {sky_height} (must fit into your terminal, either resize it's height or reduce the sky_height to a maximum of {scr_height - 13})")
+	if scr_height < sky_height + 14:
+		raise argparse.ArgumentTypeError(f"argument --sky: invalid size: {sky_height} (must fit into your terminal, either resize it's height or reduce the sky_height to a maximum of {scr_height - 14})")
 	# init game state
-	stats = {"wins": 0, "losses": 0}
+	stats = {"wins": 0, "losses": 0, "destroyed": 0}
 	sky_height = max(sky_height, num_ships-1) # adjust sky height to minimum to be able to win
 	ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles)
 	# don't wait for input (while showing a black input screen)
@@ -235,6 +238,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			if wait_for_start(stdscr, world):
 				break
 			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
+			stats["destroyed"] = 0
 			clock = time.perf_counter()
 			delta_t = 0
 	# show goodbye screen
