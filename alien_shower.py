@@ -271,6 +271,10 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			if wait_for_start(stdscr, world):
 				break
 			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
+			# draw the initial world
+			for i, line in enumerate(world):
+				stdscr.addstr(i, 0, line)
+			stdscr.refresh()
 			stats["destroyed"] = 0
 			clock = time.perf_counter()
 			delta_t = 0
