@@ -47,6 +47,7 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" 
 	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
 	world.append("")
 	world.append("time left: 0.0")
+	world.append(f"next: no action     ")
 	world.append("life: 0, shots: 0")
 	world.append("")
 	world.append(feedback)
@@ -85,7 +86,7 @@ def wait_for_start(stdscr, world):
 			break
 	return False
 
-def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback):
+def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback, next_action):
 	num_ships = len(ships)
 	world.clear()
 	world.append(f"wins: {stats['wins']}, losses: {stats['losses']}")
@@ -102,12 +103,44 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
 	world.append("")
 	world.append(f"time left: {countdown:.1f}")
+	world.append(f"next: {next_action}")
 	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}    ")
 	world.append("")
 	world.append(feedback)
 
-def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats):
+def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action):
 	feedback = " " * 20
+
+	### process input ###
+
+	num_ships = len(ships)
+	# activate the ship
+	if not next_action:
+		feedback = "no action specified "
+	# activate the ship
+	elif next_action[0] == "activate":
+		value = next_action[1]
+		ships[value] = "active"
+		active_ship["pos"] = value if value >= 0 else num_ships - 1
+		active_ship["lifetime"] = (num_ships*num_missiles)//2
+		active_ship["base"] = value if value >= 0 else num_ships - 1
+		active_ship["shots"] = num_missiles
+		feedback = "ship activated      "
+	# move the ship
+	elif next_action[0] == "move":
+		if next_action[1] == "left":
+			active_ship["pos"] -= 1
+			active_ship["lifetime"] -=1
+		if next_action[1] == "right":
+			active_ship["pos"] += 1
+			active_ship["lifetime"] -=1
+	# fire
+	elif next_action[0] == "shoot":
+		active_shots.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
+		active_ship["shots"] -= 1
+
+	### update game state ###
+
 	# check ship lifetime
 	if active_ship:
 		# based on movement and if a shot remains, loose the game
@@ -158,40 +191,35 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			return True, feedback + "\nall aliens destroyed"
 	return False, feedback + "\n" + " " * 20
 
-def process_input(key, active_ship, active_shots, ships, sky_height, num_missiles):
-	num_ships = len(ships)
+def process_input(key, active_ship, ships, next_action):
+	# leave on escape
 	if key == 27:
-		return False
+		return False, next_action
+	# gather next action from input
+	num_ships = len(ships)
 	# activate ship
 	if not active_ship and key >= 48 and key < 58:
 		value = key - 49
 		if value < num_ships and ships[value] == "inactive":
-			ships[value] = "active"
-			active_ship["pos"] = value if value >= 0 else len(ships) - 1
-			active_ship["lifetime"] = (num_ships*num_missiles)//2
-			active_ship["base"] = value if value >= 0 else len(ships) - 1
-			active_ship["shots"] = num_missiles
+			next_action = ("activate", value, f"start ship {value + 1}  ")
 	if active_ship:
 		# move ship to the left
 		if key == 97 and active_ship["pos"] > 0: #a
-			active_ship["pos"] -= 1
-			active_ship["lifetime"] -=1
+			next_action = ("move", "left", "move left     ")
 		# move ship to the right
 		if key == 100 and active_ship["pos"] < num_ships-1: #d
-			active_ship["pos"] += 1
-			active_ship["lifetime"] -=1
+			next_action = ("move", "right", "move right    ")
 		# fire
-		if key == 115: #s
-			active_shots.append({"pos_x": active_ship["pos"], "pos_y": sky_height})
-			active_ship["shots"] -= 1
-	return True
+		if key == 115 and active_ship["shots"] > 0: #s
+			next_action = ("shoot", "", "shoot         ")
+	return True, next_action
 
 def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# check for sky height plus game stats not exceeding terminal height
 	# as curses crashes with an error if the cursor moves out of the screen
 	scr_height, _ = stdscr.getmaxyx()
-	if scr_height < sky_height + 14:
-		raise argparse.ArgumentTypeError(f"argument --sky: invalid size: {sky_height} (must fit into your terminal, either resize it's height or reduce the sky_height to a maximum of {scr_height - 14})")
+	if scr_height < sky_height + 15:
+		raise argparse.ArgumentTypeError(f"argument --sky: invalid size: {sky_height} (must fit into your terminal, either resize it's height or reduce the sky_height to a maximum of {scr_height - 15})")
 	# init game state
 	stats = {"wins": 0, "losses": 0, "destroyed": 0}
 	sky_height = max(sky_height, num_ships-1) # adjust sky height to minimum to be able to win
@@ -212,21 +240,24 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	active_ship = {}
 	active_enemy = {}
 	active_shots = []
+	next_action = ()
 	clock = time.perf_counter()
 	delta_t = 0
 	while in_game:
-		# time it
-		if delta_t < timeleft:
-			delta_t = time.perf_counter() - clock
-		else:
-			clock = time.perf_counter()
-			delta_t = 0
-			# process input
-			in_game = process_input(stdscr.getch(), active_ship, active_shots, ships, sky_height, num_missiles)
+		# process input
+		in_game, next_action = process_input(stdscr.getch(), active_ship, ships, next_action)
+		# update game state on next step
+		if delta_t >= timeleft:
 			# update state
-			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, stats)
+			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action)
+			# clear action
+			next_action = ()
+			# renew clock
+			clock = time.perf_counter()
+		# time next step
+		delta_t = time.perf_counter() - clock
 		# update the world
-		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, timeleft - delta_t, feedback)
+		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, timeleft - delta_t, feedback, next_action[2] if next_action else "no action     ")
 		# draw the world
 		for i, line in enumerate(world):
 			stdscr.addstr(i, 0, line)
