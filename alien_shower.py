@@ -112,8 +112,10 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 	if active_ship:
 		# based on movement and if a shot remains, loose the game
 		if active_ship["lifetime"] <= 0 and active_ship["shots"] > 0:
+			ships[active_ship["base"]] = "wracked"
+			active_ship.clear()
 			stats["losses"] += 1
-			return True, "ship wracked early  \ndestroyed by aliens "
+			return True, "ship life expired   \ndestroyed by aliens "
 		# based on shots
 		if active_ship["shots"] <= 0:
 			ships[active_ship["base"]] = "wracked"
@@ -144,7 +146,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		# loose the game
 		if active_enemy["pos_y"] >= sky_height:
 			stats["losses"] += 1
-			return True, feedback + "\ndestroyed by aliens "
+			return True, "missing defence      \ndestroyed by aliens "
 	else:
 		# set new enemy if in store
 		if enemy_appearance:
