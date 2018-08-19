@@ -45,8 +45,8 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" 
 	world.append(" ".join(" w " for i in range(num_ships)))
 	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
 	world.append("")
-	world.append(f"time left: 0.0")
-	world.append(f"life: {0}, shots: {0}")
+	world.append("time left: 0.0")
+	world.append("life: 0, shots: 0")
 	world.append("")
 	world.append(feedback)
 
@@ -70,15 +70,19 @@ def show_help(stdscr, num_missiles):
 		stdscr.addstr(12, 0, "But don't take too much time.")
 		stdscr.addstr(13, 0, "Have fun!")
 		stdscr.addstr(14, 0, "(Press escape to end the game and view your score.)")
-		stdscr.addstr(15, 0, "(Press a key to resume now, press another to start...)")
-		stdscr.refresh()
+		stdscr.addstr(15, 0, "(Press return to resume now, press return again to start...)")
 
 def wait_for_start(stdscr, world):
 	stdscr.clear()
-	while stdscr.getch() == -1:
+	while True:
+		key = stdscr.getch()
+		if key == 27:
+			return True
 		for i, line in enumerate(world):
 			stdscr.addstr(i, 0, line)
-		stdscr.refresh()
+		if key == 10:
+			break
+	return False
 
 def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback):
 	num_ships = len(ships)
@@ -224,12 +228,13 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		stdscr.refresh()
 		# check for new game
 		if new_game:
-			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
 			new_game = False
 			active_ship = {}
 			active_enemy = {}
 			active_shots = []
-			wait_for_start(stdscr, world)
+			if wait_for_start(stdscr, world):
+				break
+			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
 			clock = time.perf_counter()
 			delta_t = 0
 	# show goodbye screen
