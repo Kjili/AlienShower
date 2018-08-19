@@ -100,7 +100,7 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
 	world.append("")
 	world.append(f"time left: {countdown:.1f}")
-	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}")
+	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}    ")
 	world.append("")
 	world.append(feedback)
 
