@@ -337,16 +337,17 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	stdscr.clear()
 	while stdscr.getch() == -1:
 		stdscr.addstr(0, 0, "Thanks for playing Alien Shower.")
-		stdscr.addstr(1, 0, "Your final score:")
-		stdscr.addstr(2, 0, f"{stats['wins']} wins to {stats['losses']} losses.")
-		stdscr.addstr(3, 0, "")
-		row = 3
+		stdscr.addstr(2, 0, "Your final score:")
+		stdscr.addstr(4, 0, "Triumphs:")
+		stdscr.addstr(4, 32, f"{stats['wins']}")
+		stdscr.addstr(5, 0, "Losses:")
+		stdscr.addstr(5, 32, f"{stats['losses']}")
+		row = 6
 		for key in final_stats:
 			row += 1
-			stdscr.addstr(row, 0, f"Total {key}: {final_stats[key][0]} of {final_stats[key][1]}")
-		stdscr.addstr(row + 1, 0, "")
-		stdscr.addstr(row + 2, 0, "Bye!")
-		stdscr.addstr(row + 3, 0, "(Press a key to quit)")
+			stdscr.addstr(row, 0, f"Total {key}:")
+			stdscr.addstr(row, 32, f"{final_stats[key][0]} of {final_stats[key][1]}")
+		stdscr.addstr(row + 2, 0, "(Press any key to quit)", curses.A_ITALIC)
 		stdscr.refresh()
 
 def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
