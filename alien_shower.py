@@ -54,22 +54,34 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" 
 
 	return ships, enemy_appearance, world
 
-def show_help(stdscr, num_missiles):
+def addstr_format(stdscr, x, y, string, *positions, form=curses.A_BOLD):
+	if not positions:
+		return
+	string_array = string.split(" ")
+	stdscr.addstr(x, y, "")
+	last_pos = 0
+	for pos in positions:
+		stdscr.addstr(" ".join(string_array[last_pos:pos]))
+		stdscr.addstr(f" {string_array[pos]} " if last_pos != pos else f"{string_array[pos]} ", form)
+		last_pos = pos + 1
+	stdscr.addstr(" ".join(string_array[last_pos:]))
+
+def show_help(stdscr, num_missiles, num_ships):
 	stdscr.clear()
 	while stdscr.getch() == -1:
-		stdscr.addstr(0, 0, "Welcome to Alien Shower.")
+		addstr_format(stdscr, 0, 0, "Welcome to Alien Shower.", 2, 3)
 		stdscr.addstr(1, 0, "Your task is to protect the earth from incoming aliens.")
-		stdscr.addstr(2, 0, "You can activate any ship by pressing the respective number.")
-		stdscr.addstr(3, 0, "You can steer left and right by pressing \"a\" or \"d\".")
-		stdscr.addstr(4, 0, "You can shoot by pressing \"s\".")
+		addstr_format(stdscr, 2, 0, "You can activate any ship by pressing the respective number.", 2, 4, 9)
+		addstr_format(stdscr, 3, 0, "You can steer left and right by pressing \"a\" or \"d\".", 2, 8, 10)
+		addstr_format(stdscr, 4, 0, "You can shoot by pressing \"s\".", 2, 5)
 		stdscr.addstr(5, 0, "Be warned, though:")
 		stdscr.addstr(6, 0, "Any missed shot will result in destruction.")
-		stdscr.addstr(7, 0, "Your ships can only move so far.")
-		stdscr.addstr(8, 0, f"Your ships can only fire {num_missiles} times.")
-		stdscr.addstr(9, 0, "You may only have one ship active at a time.")
-		stdscr.addstr(10, 0, "Once it is wracked you may activate a new one. You cannot deactivate a ship.")
+		addstr_format(stdscr, 7, 0, f"Each ship can only move {(num_ships*num_missiles)//2} times.", 4, 5, 6)
+		addstr_format(stdscr, 8, 0, f"Each ship can only fire {num_missiles} times.", 4, 5, 6)
+		addstr_format(stdscr, 9, 0, "You may only have one ship active at a time.", 4, 5, 6)
+		addstr_format(stdscr, 10, 0, "Once it is wracked you may activate a new one. You cannot deactivate a ship.", 6, 7, 8, 11, 12)
 		stdscr.addstr(11, 0, "So look ahead to where the next enemy will come from and plan your move.")
-		stdscr.addstr(12, 0, "But don't take too much time.")
+		addstr_format(stdscr, 12, 0, "But don't take too much time to act.", 5)
 		stdscr.addstr(13, 0, "Have fun!")
 		stdscr.addstr(14, 0, "(Press escape to end the game and view your score.)")
 		stdscr.addstr(15, 0, "(Press return to resume now, press return again to start...)")
@@ -247,7 +259,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	curses.curs_set(0)
 	# show help and initial world and wait for user input (any key) to start
 	if not no_help:
-		show_help(stdscr, num_missiles)
+		show_help(stdscr, num_missiles, num_ships)
 	wait_for_start(stdscr, world)
 	# game loop
 	stdscr.clear()
