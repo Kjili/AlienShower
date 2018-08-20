@@ -22,7 +22,7 @@ import time
 import random
 import argparse
 
-def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" " * 20 + "\n" + " " * 20):
+def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="hit return to start " + "\n" + " " * 20):
 	# init ships
 	ships = []
 	for i in range(num_ships):
