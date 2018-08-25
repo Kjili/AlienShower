@@ -54,6 +54,14 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="h
 
 	return ships, enemy_appearance, world
 
+def draw_world(stdscr, world):
+	world_len = len(world)
+	for i, line in enumerate(world):
+		if i in (world_len - 4, world_len - 3, world_len - 1):
+			stdscr.addstr(i, 0, line, curses.A_BOLD)
+		else:
+			stdscr.addstr(i, 0, line)
+
 def addstr_format(stdscr, x, y, string, *positions, form=curses.A_BOLD):
 	if not positions:
 		return
@@ -119,8 +127,7 @@ def wait_for_start(stdscr, world):
 		key = stdscr.getch()
 		if key == 27:
 			return True
-		for i, line in enumerate(world):
-			stdscr.addstr(i, 0, line)
+		draw_world(stdscr, world)
 		if key == 10:
 			break
 	return False
@@ -319,8 +326,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		# update the world
 		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, timeleft - delta_t, feedback, next_action[2] if next_action else "no action     ")
 		# draw the world
-		for i, line in enumerate(world):
-			stdscr.addstr(i, 0, line)
+		draw_world(stdscr, world)
 		stdscr.refresh()
 		# check for new game
 		if new_game:
@@ -332,8 +338,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 				break
 			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
 			# draw the initial world
-			for i, line in enumerate(world):
-				stdscr.addstr(i, 0, line)
+			draw_world(stdscr, world)
 			stdscr.refresh()
 			stats["destroyed"] = 0
 			clock = time.perf_counter()
