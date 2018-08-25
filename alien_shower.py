@@ -80,9 +80,10 @@ def show_help(stdscr, num_missiles, num_ships):
 		addstr_format(stdscr, 2, 0, "You can activate any ship by pressing the respective number.", 2, 4, 9)
 		addstr_format(stdscr, 3, 0, "You can steer left and right by pressing \"a\" or \"d\".", 2, 8, 10)
 		addstr_format(stdscr, 4, 0, "You can shoot by pressing \"s\".", 2, 5)
-		stdscr.addstr(5, 0, "You can end the game and view your score by pressing \"escape\".")
-		stdscr.addstr(6, 0, "After each round, you can start a new one by pressing \"return\".")
-		stdscr.addstr(8, 0, "(Press any key to resume...)", curses.A_ITALIC)
+		addstr_format(stdscr, 5, 0, "You can increase/decrease the speed by pressing \"+\"/\"-\".", 4, 7)
+		addstr_format(stdscr, 6, 0, "You can end the game and view your score by pressing \"escape\".", 2, 11)
+		addstr_format(stdscr, 7, 0, "After each round, you can start a new one by pressing \"return\".", 5, 11)
+		stdscr.addstr(9, 0, "(Press any key to resume...)", curses.A_ITALIC)
 	stdscr.clear()
 	while stdscr.getch() == -1:
 		stdscr.addstr(0, 0, "Warning:", curses.A_UNDERLINE)
@@ -239,10 +240,14 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			return True, feedback + "\nall aliens destroyed"
 	return False, feedback + "\n" + " " * 20
 
-def process_input(key, active_ship, ships, next_action):
+def process_input(key, active_ship, ships, next_action, timeleft):
 	# leave on escape
 	if key == 27:
-		return False, next_action
+		return False, next_action, timeleft
+	if key == 43: #+
+		return True, next_action, timeleft - 0.1
+	if key == 45: #-
+		return True, next_action, timeleft + 0.1
 	# gather next action from input
 	num_ships = len(ships)
 	# activate ship
@@ -260,7 +265,7 @@ def process_input(key, active_ship, ships, next_action):
 		# fire
 		if key == 115 and active_ship["shots"] > 0: #s
 			next_action = ("shoot", "", "shoot         ")
-	return True, next_action
+	return True, next_action, timeleft
 
 def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# check for sky height plus game stats not exceeding terminal height
@@ -300,7 +305,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	delta_t = 0
 	while in_game:
 		# process input
-		in_game, next_action = process_input(stdscr.getch(), active_ship, ships, next_action)
+		in_game, next_action, timeleft = process_input(stdscr.getch(), active_ship, ships, next_action, timeleft)
 		# update game state on next step
 		if delta_t >= timeleft:
 			# update state
