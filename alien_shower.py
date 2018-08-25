@@ -22,46 +22,6 @@ import time
 import random
 import argparse
 
-def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="hit return to start " + "\n" + " " * 20):
-	# init ships
-	ships = []
-	for i in range(num_ships):
-		ships.append("inactive")
-
-	# init enemies (as positions they will appear at)
-	enemy_appearance = list(range(num_ships)) * num_missiles
-	random.shuffle(enemy_appearance)
-
-	# init world
-	world = []
-	width = num_ships*3 + num_ships - 1
-	world.append(f"wins: {wins}, losses: {losses}")
-	world.append("aliens destroyed: 0  ")
-	world.append("")
-	world.append(" " * width)
-	world.append("_" * width)
-	for i in range(sky_height):
-		world.append("   " * width)
-	world.append("." * width)
-	world.append(" ".join(" w " for i in range(num_ships)))
-	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
-	world.append("")
-	world.append("time left: 0.0")
-	world.append(f"next: no action     ")
-	world.append("life: 0, shots: 0")
-	world.append("")
-	world.append(feedback)
-
-	return ships, enemy_appearance, world
-
-def draw_world(stdscr, world):
-	world_len = len(world)
-	for i, line in enumerate(world):
-		if i in (world_len - 4, world_len - 3, world_len - 1):
-			stdscr.addstr(i, 0, line, curses.A_BOLD)
-		else:
-			stdscr.addstr(i, 0, line)
-
 def addstr_format(stdscr, x, y, string, *positions, form=curses.A_BOLD):
 	if not positions:
 		return
@@ -121,16 +81,37 @@ def show_help(stdscr, num_missiles, num_ships):
 		stdscr.addstr(8, 0, "Have fun!")
 		stdscr.addstr(10, 0, "(Press return to resume to a gameboard overview, press return again to start...)", curses.A_ITALIC)
 
-def wait_for_start(stdscr, world):
-	stdscr.clear()
-	while True:
-		key = stdscr.getch()
-		if key == 27:
-			return True
-		draw_world(stdscr, world)
-		if key == 10:
-			break
-	return False
+def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="hit return to start " + "\n" + " " * 20):
+	# init ships
+	ships = []
+	for i in range(num_ships):
+		ships.append("inactive")
+
+	# init enemies (as positions they will appear at)
+	enemy_appearance = list(range(num_ships)) * num_missiles
+	random.shuffle(enemy_appearance)
+
+	# init world
+	world = []
+	width = num_ships*3 + num_ships - 1
+	world.append(f"wins: {wins}, losses: {losses}")
+	world.append("aliens destroyed: 0  ")
+	world.append("")
+	world.append(" " * width)
+	world.append("_" * width)
+	for i in range(sky_height):
+		world.append("   " * width)
+	world.append("." * width)
+	world.append(" ".join(" w " for i in range(num_ships)))
+	world.append(" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""))
+	world.append("")
+	world.append("time left: 0.0")
+	world.append(f"next: no action     ")
+	world.append("life: 0, shots: 0")
+	world.append("")
+	world.append(feedback)
+
+	return ships, enemy_appearance, world
 
 def update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback, next_action):
 	num_ships = len(ships)
@@ -153,6 +134,14 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append(f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}    ")
 	world.append("")
 	world.append(feedback)
+
+def draw_world(stdscr, world):
+	world_len = len(world)
+	for i, line in enumerate(world):
+		if i in (world_len - 4, world_len - 3, world_len - 1):
+			stdscr.addstr(i, 0, line, curses.A_BOLD)
+		else:
+			stdscr.addstr(i, 0, line)
 
 def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats):
 	feedback = " " * 20
@@ -273,6 +262,17 @@ def process_input(key, active_ship, ships, next_action, timeleft):
 		if key == 115 and active_ship["shots"] > 0: #s
 			next_action = ("shoot", "", "shoot         ")
 	return True, next_action, timeleft
+
+def wait_for_start(stdscr, world):
+	stdscr.clear()
+	while True:
+		key = stdscr.getch()
+		if key == 27:
+			return True
+		draw_world(stdscr, world)
+		if key == 10:
+			break
+	return False
 
 def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# check for sky height plus game stats not exceeding terminal height
