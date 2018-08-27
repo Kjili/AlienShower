@@ -248,22 +248,23 @@ def process_input(key, active_ship, ships, next_action, timeleft):
 	if key == 45: #-
 		return True, next_action, timeleft + 0.1
 	# gather next action from input
-	num_ships = len(ships)
-	# activate ship
-	if not active_ship and key >= 48 and key < 58:
-		value = key - 49
-		if value < num_ships and ships[value] == "inactive":
-			next_action = ("activate", value, f"start ship {value + 1}  ")
-	if active_ship:
-		# move ship to the left
-		if key == 97 and active_ship["pos"] > 0: #a
-			next_action = ("move", "left", "move left     ")
-		# move ship to the right
-		if key == 100 and active_ship["pos"] < num_ships-1: #d
-			next_action = ("move", "right", "move right    ")
-		# fire
-		if key == 115 and active_ship["shots"] > 0: #s
-			next_action = ("shoot", "", "shoot         ")
+	if not next_action:
+		num_ships = len(ships)
+		# activate ship
+		if not active_ship and key >= 48 and key < 58:
+			value = key - 49
+			if value < num_ships and ships[value] == "inactive":
+				next_action = ("activate", value, f"start ship {value + 1}  ")
+		if active_ship:
+			# move ship to the left
+			if key == 97 and active_ship["pos"] > 0: #a
+				next_action = ("move", "left", "move left     ")
+			# move ship to the right
+			if key == 100 and active_ship["pos"] < num_ships-1: #d
+				next_action = ("move", "right", "move right    ")
+			# fire
+			if key == 115 and active_ship["shots"] > 0: #s
+				next_action = ("shoot", "", "shoot         ")
 	return True, next_action, timeleft
 
 def wait_for_start(stdscr, world):
