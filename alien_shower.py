@@ -105,7 +105,7 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="h
 	world.append((" ".join(" w " for i in range(num_ships)),))
 	world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
-	world.append(("time left: 0.0",))
+	world.append((f"time left: {chr(0x25a0) * (5 - 1)}",))
 	world.append((f"next: no action     ", [1, 2]))
 	world.append(("life: 0, shots: 0", [1, 3]))
 	world.append(("",))
@@ -129,7 +129,7 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append((" ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships)),))
 	world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
-	world.append((f"time left: {countdown:.1f}",))
+	world.append((f"time left: {chr(0x25a0) * (countdown - 1)}    ",))
 	world.append((f"next: {next_action}", [1, 2, 3]))
 	world.append((f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}    ", [1, 3]))
 	world.append(("",))
@@ -328,7 +328,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		# time next step
 		delta_t = time.perf_counter() - clock
 		# update the world
-		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, timeleft - delta_t, feedback, next_action[2] if next_action else "no action     ")
+		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, 5-int(delta_t/(timeleft/5)), feedback, next_action[2] if next_action else "no action     ")
 		# draw the world
 		draw_world(stdscr, world)
 		stdscr.refresh()
