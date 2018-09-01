@@ -135,16 +135,23 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	world.append(("",))
 	world.append((feedback,))
 
-def draw_world(stdscr, world):
+def draw_world(stdscr, world, color=0):
 	world_len = len(world)
 	for i, tpl in enumerate(world):
+		# mark feedback lines bold (and colored if color is > 0)
 		if i in (world_len - 1,):
-			stdscr.addstr(i, 0, tpl[0], curses.A_BOLD)
+			stdscr.addstr(i, 0, tpl[0], curses.A_BOLD | curses.color_pair(color))
 			continue
+		# mark the rest as given by a second tuple element
 		if len(tpl) > 1:
 			addstr_format(stdscr, i, 0, tpl[0], *tpl[1])
 		else:
 			stdscr.addstr(i, 0, tpl[0])
+		# mark win or loss if color is given
+		if i == 0 and color == 1:
+			addstr_format(stdscr, i, 0, tpl[0], 2, 3)
+		if i == 0 and color == 2:
+			addstr_format(stdscr, i, 0, tpl[0], 0, 1)
 
 def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats):
 	feedback = " " * 20
@@ -267,13 +274,13 @@ def process_input(key, active_ship, ships, next_action, timeleft):
 				next_action = ("shoot", "", "shoot         ")
 	return True, next_action, timeleft
 
-def wait_for_start(stdscr, world):
+def wait_for_start(stdscr, world, color=0):
 	stdscr.clear()
 	while True:
 		key = stdscr.getch()
 		if key == 27:
 			return True
-		draw_world(stdscr, world)
+		draw_world(stdscr, world, color)
 		if key == 10:
 			break
 	return False
@@ -299,6 +306,10 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	stdscr.nodelay(True)
 	# hide cursor
 	curses.curs_set(0)
+	# use colors as used per default in the terminal
+	curses.use_default_colors()
+	curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+	curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
 	# show help and initial world and wait for user input (any key) to start
 	if not no_help:
 		show_help(stdscr, num_missiles, num_ships)
@@ -338,7 +349,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			active_ship = {}
 			active_enemy = {}
 			active_shots = []
-			if wait_for_start(stdscr, world):
+			if wait_for_start(stdscr, world, 2 if "all aliens destroyed" in feedback else 1):
 				break
 			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
 			# draw the initial world
