@@ -198,6 +198,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			active_ship.clear()
 			stats["losses"] += 1
 			final_stats["ships lifetime expired"][0] += 1
+			final_stats["missed defence"][1] += 1
 			return True, "ship life expired   \nhit return to retry "
 		# based on shots
 		if active_ship["shots"] <= 0:
@@ -220,6 +221,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		elif active_shots[i]["pos_y"] < 0:
 			stats["losses"] += 1
 			final_stats["missed shots"][0] += 1
+			final_stats["missed defence"][1] += 1
 			return True, "missed shot          \nhit return to retry "
 		# handle move
 		else:
@@ -232,6 +234,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		if active_enemy["pos_y"] >= sky_height:
 			stats["losses"] += 1
 			final_stats["missed defence"][0] += 1
+			final_stats["missed defence"][1] += 1
 			return True, "missing defence      \nhit return to retry "
 	else:
 		# set new enemy if in store
