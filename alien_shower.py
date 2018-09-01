@@ -191,7 +191,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			active_ship.clear()
 			stats["losses"] += 1
 			final_stats["ships lifetime expired"][0] += 1
-			return True, "ship life expired   \ndestroyed by aliens "
+			return True, "ship life expired   \nhit return to retry "
 		# based on shots
 		if active_ship["shots"] <= 0:
 			ships[active_ship["base"]] = "wracked"
@@ -213,7 +213,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		elif active_shots[i]["pos_y"] < 0:
 			stats["losses"] += 1
 			final_stats["missed shots"][0] += 1
-			return True, "missed shot          \ndestroyed by aliens "
+			return True, "missed shot          \nhit return to retry "
 		# handle move
 		else:
 			active_shots[i]["pos_y"] -= 1
@@ -225,7 +225,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		if active_enemy["pos_y"] >= sky_height:
 			stats["losses"] += 1
 			final_stats["missed defence"][0] += 1
-			return True, "missing defence      \ndestroyed by aliens "
+			return True, "missing defence      \nhit return to retry "
 	else:
 		# set new enemy if in store
 		if enemy_appearance:
@@ -236,7 +236,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		else:
 			stats["wins"] += 1
 			final_stats["missed defence"][1] += 1
-			return True, feedback + "\nall aliens destroyed"
+			return True, "all aliens destroyed\nhit return for more "
 	return False, feedback + "\n" + " " * 20
 
 def process_input(key, active_ship, ships, next_action, timeleft):
