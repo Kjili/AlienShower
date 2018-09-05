@@ -131,12 +131,11 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 								else "   " for i in range(num_ships)),))
 	fleet = " ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships))
 	if active_ship:
-		#print(active_ship["pos"])
 		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], "."))
 		world.append((fleet,))
 	else:
 		world.append(("." * len(world[-1][0]),))
-		world.append((fleet, range(num_ships*3)))
+		world.append((fleet, range(len(fleet.split(" ")))))
 	world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
 	world.append((f"time left: {chr(0x25a0) * (countdown - 1)}    ",))
