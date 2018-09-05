@@ -22,17 +22,21 @@ import time
 import random
 import argparse
 
-def addstr_format(stdscr, x, y, string, *positions, form=curses.A_BOLD):
+def addstr_format(stdscr, x, y, string, *positions, form=curses.A_BOLD, split_at=" "):
 	if not positions:
 		return
-	string_array = string.split(" ")
+	string_array = string.split(split_at)
 	stdscr.addstr(x, y, "")
 	last_pos = 0
 	for pos in positions:
-		stdscr.addstr(" ".join(string_array[last_pos:pos]))
-		stdscr.addstr(f" {string_array[pos]} " if last_pos != pos else f"{string_array[pos]} ", form)
+		if last_pos != pos:
+			stdscr.addstr(split_at.join(string_array[last_pos:pos]) + split_at)
+		else:
+			stdscr.addstr(split_at.join(string_array[last_pos:pos]))
+		stdscr.addstr(f"{string_array[pos]}", form)
+		stdscr.addstr(split_at)
 		last_pos = pos + 1
-	stdscr.addstr(" ".join(string_array[last_pos:]))
+	stdscr.addstr(split_at.join(string_array[last_pos:]))
 
 def show_help(stdscr, num_missiles, num_ships):
 	stdscr.clear()
@@ -125,8 +129,14 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 		world.append((" ".join(" * " if active_shots and any(pos["pos_x"] == i and pos["pos_y"] == j for pos in active_shots)
 								else " m " if active_enemy and active_enemy["pos_x"] == i and active_enemy["pos_y"] == j
 								else "   " for i in range(num_ships)),))
-	world.append((".".join(".w." if active_ship and active_ship["pos"] == i else "..." for i in range(num_ships)),))
-	world.append((" ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships)),))
+	fleet = " ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships))
+	if active_ship:
+		#print(active_ship["pos"])
+		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], "."))
+		world.append((fleet,))
+	else:
+		world.append(("." * len(world[-1][0]),))
+		world.append((fleet, range(num_ships*3)))
 	world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
 	world.append((f"time left: {chr(0x25a0) * (countdown - 1)}    ",))
@@ -143,7 +153,9 @@ def draw_world(stdscr, world, color=0):
 			stdscr.addstr(i, 0, tpl[0], curses.A_BOLD | curses.color_pair(color))
 			continue
 		# mark the rest as given by a second tuple element
-		if len(tpl) > 1:
+		if len(tpl) > 2:
+			addstr_format(stdscr, i, 0, tpl[0], *tpl[1], split_at=tpl[2])
+		elif len(tpl) > 1:
 			addstr_format(stdscr, i, 0, tpl[0], *tpl[1])
 		else:
 			stdscr.addstr(i, 0, tpl[0])
