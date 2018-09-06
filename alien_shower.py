@@ -85,6 +85,96 @@ def show_help(stdscr, num_missiles, num_ships):
 		stdscr.addstr(8, 0, "Have fun!")
 		stdscr.addstr(10, 0, "(Press return to resume to a gameboard overview, press return again to start...)", curses.A_ITALIC)
 
+def game_snapshot(num_ships, sky_height, num_missiles, ships):
+	# copy the ships to leave them unchanged for the game
+	ships = ships.copy()
+	# initialize a world
+	world = []
+
+	# add an enemy and enemy look-ahead
+	active_enemy = {}
+	active_enemy["pos_x"] = num_ships - 1
+	active_enemy["pos_y"] = sky_height//3
+	enemy_appearance = [max(0, num_ships//2 - 1)]
+
+	# add a shot at the enemy if the sky_height is sufficiently large
+	active_shots = []
+	if sky_height > 1:
+		active_shots.append({"pos_x": active_enemy["pos_x"], "pos_y": (2*sky_height)//3})
+
+	# add a ship
+	active_ship = {}
+	feedback = " " * 20
+	lifetime = (num_ships*num_missiles)//2 # same as ingame
+	stats = {"wins": 0, "losses": 0, "destroyed": 0}
+	# fixed look for low sky height
+	if sky_height <= 1:
+		start_at = active_enemy["pos_x"]
+		active_ship["lifetime"] = 1
+		active_ship["pos"] = active_enemy["pos_x"]
+		active_ship["shots"] = 1
+		feedback = "ship activated      "
+	else:
+		# no ship for one missile only (because it just shot...) and start at enemy position (for simplicity)
+		if num_missiles <= 1:
+			start_at = active_enemy["pos_x"]
+			active_ship["lifetime"] = 0
+		else:
+			# arbitrary base position close to the enemy but not below
+			temp_base = num_ships - 2
+			# move the base if the lifetime is sufficient, otherwise leave it below the shot enemy
+			if lifetime > active_enemy["pos_x"] - temp_base + active_enemy["pos_x"] - enemy_appearance[-1]:
+				start_at = temp_base
+			else:
+				start_at = active_enemy["pos_x"]
+			# move the ship position to the left if allowed by the shot position
+			active_ship["pos"] = max(1, num_ships - min(3, sky_height - active_shots[0]["pos_y"]))
+			# adapt the lifetime to the movement between base, enemy and current position
+			active_ship["lifetime"] = lifetime - (active_enemy["pos_x"] - start_at + active_enemy["pos_x"] - active_ship["pos"])
+			# count down the missiles
+			active_ship["shots"] = num_missiles - 1
+	ships[start_at] = "active"
+	active_ship["base"] = start_at
+	# if only one missile is available, there is no active ship
+	# set the shot position to minimum to be able to show the ship wracked message for better feedback
+	if active_ship["lifetime"] == 0:
+		active_ship = {}
+		active_shots[0]["pos_y"] = sky_height - 1
+		feedback = ("ship wracked        ")
+
+	# if enough ships exist, display one as wracked
+	if num_ships > 3:
+		stats["destroyed"] = num_missiles
+		ships[max(0, num_ships//2 - 1)] = "wracked"
+	# if even more ships exist, display two as wracked
+	if num_ships > 6:
+		stats["destroyed"] = num_missiles*2
+		ships[1] = "wracked"
+		ships[max(0, num_ships//2 - 1)] = "wracked"
+
+	# set a countdown smaller than max countdown
+	countdown = 2
+	# set a feedback and how to continue
+	feedback = feedback + "\n" + "hit return to start "
+
+	# set activate ship action if none is active (choose a ship close to the next enemy)
+	if not active_ship:
+		start_ship_at = enemy_appearance[-1]
+		i = 1
+		while ships[start_ship_at] != "inactive":
+			start_ship_at = (enemy_appearance[-1] - i) % 9
+			i -= 1
+		next_action = f"start ship {start_ship_at + 1}  "
+	# set move action for active ship unless there is a reason to shoot
+	elif sky_height > 1 and (active_ship["pos"] != active_enemy["pos_x"] or active_ship["pos"] == active_shots[0]["pos_x"]):
+		next_action = "move left     "
+	else:
+		next_action = "shoot         "
+
+	# create the world
+	update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback, next_action)
+	return world
+
 def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="hit return to start " + "\n" + " " * 20):
 	# init ships
 	ships = []
