@@ -314,7 +314,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		"missed shots": [0, 0],
 		"ships lifetime expired": [0, 0]
 	}
-	sky_height = max(sky_height, num_ships-1) # adjust sky height to minimum to be able to win
+	sky_height = max(sky_height, num_ships-1, num_missiles) # adjust sky height to minimum to be able to win
 	ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles)
 	# don't wait for input (while showing a black input screen)
 	stdscr.nodelay(True)
@@ -392,6 +392,8 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
 	if num_ships < 2 or num_ships > 10:
 		raise argparse.ArgumentTypeError(f"argument --ships: invalid choice: {num_ships} (choose from 2, 3, 4, 5, 6, 7, 8, 9, 10)")
+	if num_missiles < 1:
+		raise argparse.ArgumentTypeError(f"argument --missiles: invalid choice: {num_missiles} (must be larger than 0)")
 	if difficulty == "easy":
 		num_ships=5
 		sky_height=8
