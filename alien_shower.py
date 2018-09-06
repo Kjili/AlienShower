@@ -417,7 +417,11 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	# show help and initial world and wait for user input (any key) to start
 	if not no_help:
 		show_help(stdscr, num_missiles, num_ships)
-	wait_for_start(stdscr, world)
+	wait_for_start(stdscr, game_snapshot(num_ships, sky_height, num_missiles, ships))
+	stdscr.clear()
+	draw_world(stdscr, world)
+	stdscr.refresh()
+	time.sleep(1)
 	# game loop
 	stdscr.clear()
 	in_game = True
