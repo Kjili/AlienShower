@@ -80,10 +80,11 @@ def show_help(stdscr, num_missiles, num_ships):
 		addstr_format(stdscr, 2, 0, f"Activate: {' '.join(list(map(lambda x: str(x % 10), range(1, num_ships + 1))))}", 0)
 		addstr_format(stdscr, 3, 0, "Move: a d", 0)
 		addstr_format(stdscr, 4, 0, "Shoot: s", 0)
-		stdscr.addstr(6, 0, "Look ahead to where the next enemy will come from and plan your move.")
-		stdscr.addstr(7, 0, "But don't take too much time to act.")
-		stdscr.addstr(8, 0, "Have fun!")
-		stdscr.addstr(10, 0, "(Press return to resume to a gameboard overview, press return again to start...)", curses.A_ITALIC)
+		addstr_format(stdscr, 6, 0, "Change Speed: + -", 0, 1)
+		stdscr.addstr(8, 0, "Look ahead to where the next enemy will come from and plan your move.")
+		stdscr.addstr(9, 0, "But don't take too much time to act.")
+		stdscr.addstr(10, 0, "Have fun!")
+		stdscr.addstr(12, 0, "(Press return to resume to a gameboard overview, press return again to start...)", curses.A_ITALIC)
 
 def game_snapshot(num_ships, sky_height, num_missiles, ships):
 	# copy the ships to leave them unchanged for the game
