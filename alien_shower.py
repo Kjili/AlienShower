@@ -222,12 +222,17 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 								else "   " for i in range(num_ships)),))
 	fleet = " ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships))
 	if active_ship:
-		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], "."))
-		world.append((fleet,))
+		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], curses.A_BOLD, "."))
+		world.append((fleet, range(len(fleet.split(" "))), curses.A_DIM))
+		world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), range(num_ships), curses.A_DIM))
 	else:
 		world.append(("." * len(world[-1][0]),))
 		world.append((fleet, range(len(fleet.split(" ")))))
-	world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
+		inactive_ships = [i for i in range(num_ships) if ships[i] != "inactive"]
+		if inactive_ships:
+			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), inactive_ships, curses.A_DIM))
+		else:
+			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
 	world.append((f"time left: {chr(0x25a0) * (countdown - 1)}    ",))
 	world.append((f"next: {next_action}", [1, 2, 3]))
@@ -242,9 +247,11 @@ def draw_world(stdscr, world, color=0):
 		if i in (world_len - 1,):
 			stdscr.addstr(i, 0, tpl[0], curses.A_BOLD | curses.color_pair(color))
 			continue
-		# mark the rest as given by a second tuple element
-		if len(tpl) > 2:
-			addstr_format(stdscr, i, 0, tpl[0], *tpl[1], split_at=tpl[2])
+		# mark the rest as given by the other tuple elements
+		if len(tpl) > 3:
+			addstr_format(stdscr, i, 0, tpl[0], *tpl[1], form=tpl[2], split_at=tpl[3])
+		elif len(tpl) > 2:
+			addstr_format(stdscr, i, 0, tpl[0], *tpl[1], form=tpl[2])
 		elif len(tpl) > 1:
 			addstr_format(stdscr, i, 0, tpl[0], *tpl[1])
 		else:
