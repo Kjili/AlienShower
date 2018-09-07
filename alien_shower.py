@@ -454,7 +454,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	stdscr.clear()
 	draw_world(stdscr, world)
 	stdscr.refresh()
-	time.sleep(1)
+	time.sleep(timeleft)
 	# game loop
 	stdscr.clear()
 	in_game = True
