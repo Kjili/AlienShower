@@ -226,13 +226,13 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 	if active_ship:
 		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], [curses.A_BOLD], "."))
 		world.append((fleet, range(len(fleet.split(" "))), [curses.A_DIM]))
-		world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), range(num_ships), [curses.A_DIM]))
+		world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), range(num_ships), [curses.A_DIM | curses.color_pair(1)] if "ship already active" in feedback else [curses.A_DIM]))
 	else:
 		world.append(("." * len(world[-1][0]),))
 		world.append((fleet, range(len(fleet.split(" ")))))
 		inactive_ships = [i for i in range(num_ships) if ships[i] != "inactive"]
 		if inactive_ships:
-			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), inactive_ships, [curses.A_DIM, curses.A_BOLD]))
+			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), inactive_ships, [curses.A_DIM | curses.color_pair(1)] if "already active" in feedback else [curses.A_DIM, curses.A_BOLD]))
 		else:
 			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
