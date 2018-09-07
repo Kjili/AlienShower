@@ -22,21 +22,23 @@ import time
 import random
 import argparse
 
-def addstr_format(stdscr, x, y, string, *positions, form=curses.A_BOLD, split_at=" "):
+def addstr_format(stdscr, x, y, string, *positions, form=[curses.A_BOLD], split_at=" "):
 	if not positions:
 		return
+	if len(form) < 2:
+		form.append(curses.A_NORMAL)
 	string_array = string.split(split_at)
 	stdscr.addstr(x, y, "")
 	last_pos = 0
 	for pos in positions:
 		if last_pos != pos:
-			stdscr.addstr(split_at.join(string_array[last_pos:pos]) + split_at)
+			stdscr.addstr(split_at.join(string_array[last_pos:pos]) + split_at, form[1])
 		else:
-			stdscr.addstr(split_at.join(string_array[last_pos:pos]))
-		stdscr.addstr(f"{string_array[pos]}", form)
-		stdscr.addstr(split_at)
+			stdscr.addstr(split_at.join(string_array[last_pos:pos]), form[1])
+		stdscr.addstr(f"{string_array[pos]}", form[0])
+		stdscr.addstr(split_at, form[1])
 		last_pos = pos + 1
-	stdscr.addstr(split_at.join(string_array[last_pos:]))
+	stdscr.addstr(split_at.join(string_array[last_pos:]), form[1])
 
 def show_help(stdscr, num_missiles, num_ships):
 	stdscr.clear()
@@ -222,15 +224,15 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 								else "   " for i in range(num_ships)),))
 	fleet = " ".join(" w " if ships[i] == "inactive" else "   " for i in range(num_ships))
 	if active_ship:
-		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], curses.A_BOLD, "."))
-		world.append((fleet, range(len(fleet.split(" "))), curses.A_DIM))
-		world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), range(num_ships), curses.A_DIM))
+		world.append((".".join(".w." if active_ship["pos"] == i else "..." for i in range(num_ships)), [active_ship["pos"]*4+1], [curses.A_BOLD], "."))
+		world.append((fleet, range(len(fleet.split(" "))), [curses.A_DIM]))
+		world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), range(num_ships), [curses.A_DIM]))
 	else:
 		world.append(("." * len(world[-1][0]),))
 		world.append((fleet, range(len(fleet.split(" ")))))
 		inactive_ships = [i for i in range(num_ships) if ships[i] != "inactive"]
 		if inactive_ships:
-			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), inactive_ships, curses.A_DIM))
+			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""), inactive_ships, [curses.A_DIM, curses.A_BOLD]))
 		else:
 			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
