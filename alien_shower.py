@@ -178,7 +178,7 @@ def game_snapshot(num_ships, sky_height, num_missiles, ships):
 	update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback, next_action)
 	return world
 
-def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="hit return to start " + "\n" + " " * 20):
+def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback=" " * 20 + "\n" + " " * 20):
 	# init ships
 	ships = []
 	for i in range(num_ships):
@@ -492,6 +492,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 			active_shots = []
 			if wait_for_start(stdscr, world, 2 if "all aliens destroyed" in feedback else 1):
 				break
+			feedback=" " * 20 + "\n" + " " * 20
 			ships, enemy_appearance, world = init_game(num_ships, sky_height, num_missiles, stats["wins"], stats["losses"], feedback)
 			# draw the initial world
 			draw_world(stdscr, world)
