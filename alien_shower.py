@@ -264,15 +264,16 @@ def draw_world(stdscr, world, color=0):
 		if i == 0 and color == 2:
 			addstr_format(stdscr, i, 0, tpl[0], 0, 1)
 
-def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats):
-	feedback = " " * 20
-
+def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats, feedback):
 	### process input ###
 
 	num_ships = len(ships)
 	# activate the ship
 	if not next_action:
-		feedback = "no action specified "
+		if not active_ship:
+			feedback = "no ship activate yet" + "\n" + " " * 20
+		else:
+			feedback = "ship awaits commands" + "\n" + " " * 20
 	# activate the ship
 	elif next_action[0] == "activate":
 		value = next_action[1]
@@ -281,7 +282,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		active_ship["lifetime"] = (num_ships*num_missiles)//2
 		active_ship["base"] = value if value >= 0 else num_ships - 1
 		active_ship["shots"] = num_missiles
-		feedback = "ship activated      "
+		feedback = "ship activated      " + "\n" + " " * 20
 		final_stats["ships lifetime expired"][1] += 1
 		final_stats["moves made"][1] += active_ship["lifetime"]
 	# move the ship
@@ -315,7 +316,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 		if active_ship["shots"] <= 0:
 			ships[active_ship["base"]] = "wracked"
 			active_ship.clear()
-			feedback = "ship wracked        "
+			feedback = "ship wracked        " + "\n" + " " * 20
 	# move shots
 	i = 0
 	while i < len(active_shots):
@@ -325,7 +326,7 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			active_enemy.clear()
 			del active_shots[i]
 			stats["destroyed"] += 1
-			feedback = "alien destroyed     "
+			feedback = "alien destroyed     " + "\n" + " " * 20
 			final_stats["aliens destroyed"][0] += 1
 			continue
 		# handle world-border reached, loose the game
@@ -358,35 +359,49 @@ def update_state(active_ship, active_enemy, active_shots, ships, enemy_appearanc
 			stats["wins"] += 1
 			final_stats["missed defence"][1] += 1
 			return True, "all aliens destroyed\nhit return for more "
-	return False, feedback + "\n" + " " * 20
+	return False, feedback
 
-def process_input(key, active_ship, ships, next_action, timeleft):
+def process_input(key, active_ship, ships, next_action, timeleft, feedback):
 	# leave on escape
 	if key == 27:
-		return False, next_action, timeleft
+		return False, next_action, timeleft, feedback
 	if key == 43: #+
-		return True, next_action, timeleft - 0.1
+		feedback = "speed increased     " + "\n" + " " * 20
+		return True, next_action, timeleft - 0.1, feedback
 	if key == 45: #-
-		return True, next_action, timeleft + 0.1
+		feedback = "speed decreased     " + "\n" + " " * 20
+		return True, next_action, timeleft + 0.1, feedback
 	# gather next action from input
 	if not next_action:
 		num_ships = len(ships)
 		# activate ship
 		if not active_ship and key >= 48 and key < 58:
 			value = key - 49
-			if value < num_ships and ships[value] == "inactive":
-				next_action = ("activate", value, f"start ship {value + 1}  ")
+			if value < num_ships:
+				if ships[value] == "inactive":
+					next_action = ("activate", value, f"start ship {value + 1}  ")
+					feedback = " " * 20 + "\n" + " " * 20
+				else:
+					feedback = f"ship {value + 1} already active   " + "\n" + " " * 20
+			else:
+				feedback = f"no ship at position {value + 1}   " + "\n" + " " * 20
 		if active_ship:
 			# move ship to the left
 			if key == 97 and active_ship["pos"] > 0: #a
 				next_action = ("move", "left", "move left     ")
+				feedback = " " * 20 + "\n" + " " * 20
 			# move ship to the right
 			if key == 100 and active_ship["pos"] < num_ships-1: #d
 				next_action = ("move", "right", "move right    ")
+				feedback = " " * 20 + "\n" + " " * 20
 			# fire
 			if key == 115 and active_ship["shots"] > 0: #s
 				next_action = ("shoot", "", "shoot         ")
-	return True, next_action, timeleft
+				feedback = " " * 20 + "\n" + " " * 20
+			# give feedback for active ship
+			if key >= 48 and key < 58:
+				feedback = "ship already active     " + "\n" + " " * 20
+	return True, next_action, timeleft, feedback
 
 def wait_for_start(stdscr, world, color=0):
 	stdscr.clear()
@@ -445,11 +460,11 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 	delta_t = 0
 	while in_game:
 		# process input
-		in_game, next_action, timeleft = process_input(stdscr.getch(), active_ship, ships, next_action, timeleft)
+		in_game, next_action, timeleft, feedback = process_input(stdscr.getch(), active_ship, ships, next_action, timeleft, feedback)
 		# update game state on next step
 		if delta_t >= timeleft:
 			# update state
-			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats)
+			new_game, feedback = update_state(active_ship, active_enemy, active_shots, ships, enemy_appearance, sky_height, num_missiles, stats, next_action, final_stats, feedback)
 			# clear action
 			next_action = ()
 			# renew clock
