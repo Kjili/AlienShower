@@ -156,7 +156,7 @@ def game_snapshot(num_ships, sky_height, num_missiles, ships):
 		ships[max(0, num_ships//2 - 1)] = "wracked"
 
 	# set a countdown smaller than max countdown
-	countdown = 2
+	countdown = 3
 	# set a feedback and how to continue
 	feedback = feedback + "\n" + "hit return to start "
 
@@ -167,12 +167,12 @@ def game_snapshot(num_ships, sky_height, num_missiles, ships):
 		while ships[start_ship_at] != "inactive":
 			start_ship_at = (enemy_appearance[-1] - i) % 9
 			i -= 1
-		next_action = f"start ship {start_ship_at + 1}  "
+		next_action = f"wake {start_ship_at + 1}"
 	# set move action for active ship unless there is a reason to shoot
 	elif sky_height > 1 and (active_ship["pos"] != active_enemy["pos_x"] or active_ship["pos"] == active_shots[0]["pos_x"]):
-		next_action = "move left     "
+		next_action = "move <"
 	else:
-		next_action = "shoot         "
+		next_action = "fire *"
 
 	# create the world
 	update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, countdown, feedback, next_action)
@@ -202,9 +202,9 @@ def init_game(num_ships, sky_height, num_missiles, wins=0, losses=0, feedback="h
 	world.append((" ".join(" w " for i in range(num_ships)),))
 	world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
-	world.append((f"time left: {chr(0x25a0) * (5 - 1)}",))
-	world.append((f"next: no action     ", [1, 2]))
-	world.append(("life: 0, shots: 0", [1, 3]))
+	world.append((f"do: wait    in: {chr(0x25a0) * (5 - 1)}", [1]))
+	world.append(("life : ", [0, 1], [curses.A_DIM]))
+	world.append(("shots: ", [0], [curses.A_DIM]))
 	world.append(("",))
 	world.append((feedback,))
 
@@ -236,10 +236,18 @@ def update_world(world, sky_height, active_ship, active_enemy, active_shots, shi
 		else:
 			world.append((" ".join(f"({i})" for i in range(1, min(10, num_ships + 1))) + (" (0)" if num_ships == 10 else ""),))
 	world.append(("",))
-	world.append((f"time left: {chr(0x25a0) * (countdown - 1)}    ",))
-	world.append((f"next: {next_action}", [1, 2, 3]))
-	world.append((f"life: {0 if not active_ship else active_ship['lifetime']}, shots: {0 if not active_ship else active_ship['shots']}    ", [1, 3]))
-	world.append(("",))
+	world.append((f"do: {next_action}  in: {chr(0x25a0) * (countdown - 1)}    ", [1, 2]))
+	if not active_ship:
+		world.append(("life : " + " " * 13, [0, 1], [curses.A_DIM]))
+		world.append(("shots: " + " " * 13, [0], [curses.A_DIM]))
+	else:
+		life = active_ship['lifetime']
+		shots = active_ship['shots']
+		world.append((f"life : {chr(0xa4) * life + '   ' if life < 11 else chr(0xa4) * 10 + '+' + str(life - 10)}", [2]))
+		if life <= 3:
+			world[-1] = world[-1] + ([curses.A_BOLD | curses.color_pair(1)],)
+		world.append((f"shots: {'*' * shots + '   ' if shots < 11 else '*' * 10 + '+' + str(shots - 10)}    ", [1]))
+	world.append((" ",))
 	world.append((feedback,))
 
 def draw_world(stdscr, world, color=0):
@@ -379,7 +387,7 @@ def process_input(key, active_ship, ships, next_action, timeleft, feedback):
 			value = key - 49
 			if value < num_ships:
 				if ships[value] == "inactive":
-					next_action = ("activate", value, f"start ship {value + 1}  ")
+					next_action = ("activate", value, f"wake {value + 1}")
 					feedback = " " * 20 + "\n" + " " * 20
 				else:
 					feedback = f"ship {value + 1} already active   " + "\n" + " " * 20
@@ -388,15 +396,15 @@ def process_input(key, active_ship, ships, next_action, timeleft, feedback):
 		if active_ship:
 			# move ship to the left
 			if key == 97 and active_ship["pos"] > 0: #a
-				next_action = ("move", "left", "move left     ")
+				next_action = ("move", "left", "move <")
 				feedback = " " * 20 + "\n" + " " * 20
 			# move ship to the right
 			if key == 100 and active_ship["pos"] < num_ships-1: #d
-				next_action = ("move", "right", "move right    ")
+				next_action = ("move", "right", "move >")
 				feedback = " " * 20 + "\n" + " " * 20
 			# fire
 			if key == 115 and active_ship["shots"] > 0: #s
-				next_action = ("shoot", "", "shoot         ")
+				next_action = ("shoot", "", "fire *")
 				feedback = " " * 20 + "\n" + " " * 20
 			# give feedback for active ship
 			if key >= 48 and key < 58:
@@ -472,7 +480,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		# time next step
 		delta_t = time.perf_counter() - clock
 		# update the world
-		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, 5-int(delta_t/(timeleft/5)), feedback, next_action[2] if next_action else "no action     ")
+		update_world(world, sky_height, active_ship, active_enemy, active_shots, ships, enemy_appearance, stats, 5-int(delta_t/(timeleft/5)), feedback, next_action[2] if next_action else "wait  ")
 		# draw the world
 		draw_world(stdscr, world)
 		stdscr.refresh()
