@@ -42,14 +42,14 @@ def addstr_format(stdscr, x, y, string, *positions, form=[curses.A_BOLD], split_
 
 def show_help(stdscr, num_missiles, num_ships):
 	stdscr.clear()
-	while stdscr.getch() == -1:
+	while stdscr.getch() != 10:
 		addstr_format(stdscr, 0, 0, "Welcome to Alien Shower.", 2, 3)
 		stdscr.addstr(2, 0, "Your task is to protect the earth from invading aliens.")
 		stdscr.addstr(3, 0, "To fulfill this task you have a fleet of ships at your disposal.")
 		stdscr.addstr(4, 0, "You will need all of them to succeed.")
-		stdscr.addstr(6, 0, "(Press any key to resume...)", curses.A_ITALIC)
+		stdscr.addstr(6, 0, "(Press return to resume...)", curses.A_ITALIC)
 	stdscr.clear()
-	while stdscr.getch() == -1:
+	while stdscr.getch() != 10:
 		stdscr.addstr(0, 0, "Controls:", curses.A_UNDERLINE)
 		addstr_format(stdscr, 2, 0, "You can activate any ship by pressing the respective number.", 2, 4, 9)
 		addstr_format(stdscr, 3, 0, "You can steer left and right by pressing \"a\" or \"d\".", 2, 8, 10)
@@ -57,25 +57,25 @@ def show_help(stdscr, num_missiles, num_ships):
 		addstr_format(stdscr, 5, 0, "You can increase/decrease the speed by pressing \"+\"/\"-\".", 4, 7)
 		addstr_format(stdscr, 6, 0, "You can end the game and view your score by pressing \"escape\".", 2, 11)
 		addstr_format(stdscr, 7, 0, "After each round, you can start a new one by pressing \"return\".", 5, 11)
-		stdscr.addstr(9, 0, "(Press any key to resume...)", curses.A_ITALIC)
+		stdscr.addstr(9, 0, "(Press return to resume...)", curses.A_ITALIC)
 	stdscr.clear()
-	while stdscr.getch() == -1:
+	while stdscr.getch() != 10:
 		stdscr.addstr(0, 0, "Warning:", curses.A_UNDERLINE)
 		addstr_format(stdscr, 2, 0, f"Each ship can only move {(num_ships*num_missiles)//2} times.", 4, 5, 6)
 		addstr_format(stdscr, 3, 0, f"Each ship can only fire {num_missiles} times.", 4, 5, 6)
 		addstr_format(stdscr, 4, 0, "You may only have one ship active at a time.", 4, 5, 6)
 		addstr_format(stdscr, 5, 0, "You cannot deactivate a ship. Once one is wracked you may activate a new one.", 1, 2, 11, 12, 13)
 		addstr_format(stdscr, 6, 0, "You have a small time frame to decide on an action, before an alien moves again.", 4, 5)
-		stdscr.addstr(8, 0, "(Press any key to resume...)", curses.A_ITALIC)
+		stdscr.addstr(8, 0, "(Press return to resume...)", curses.A_ITALIC)
 	stdscr.clear()
-	while stdscr.getch() == -1:
+	while stdscr.getch() != 10:
 		stdscr.addstr(0, 0, "You will win, if:", curses.A_UNDERLINE)
 		addstr_format(stdscr, 2, 0, "You destroy all aliens.", 1, 2)
 		stdscr.addstr(4, 0, "You will loose, if:", curses.A_UNDERLINE)
 		addstr_format(stdscr, 6, 0, "You miss a shot.", 1)
 		addstr_format(stdscr, 7, 0, "A ship's lifetime expires before it makes it's last shot.", 2, 3)
 		addstr_format(stdscr, 8, 0, "The aliens hit the ground.", 1, 2)
-		stdscr.addstr(10, 0, "(Press any key to resume...)", curses.A_ITALIC)
+		stdscr.addstr(10, 0, "(Press return to resume...)", curses.A_ITALIC)
 	stdscr.clear()
 	while stdscr.getch() != 10:
 		stdscr.addstr(0, 0, "Remember:", curses.A_UNDERLINE)
