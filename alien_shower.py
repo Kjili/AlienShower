@@ -517,7 +517,7 @@ def game(stdscr, num_ships, sky_height, num_missiles, timeleft, no_help):
 		stdscr.addstr(row + 2, 0, "(Press any key to quit)", curses.A_ITALIC)
 		stdscr.refresh()
 
-def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False):
+def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1, no_help=False, seed=random.seed()):
 	if num_ships < 2 or num_ships > 10:
 		raise argparse.ArgumentTypeError(f"argument --ships: invalid choice: {num_ships} (choose from 2, 3, 4, 5, 6, 7, 8, 9, 10)")
 	if num_missiles < 1:
@@ -542,6 +542,8 @@ def run(difficulty="custom", num_ships=5, sky_height=4, num_missiles=2, speed=1,
 		sky_height=4 # will be overwritten
 		num_missiles=3
 		speed=0.3
+	if seed is not None:
+		random.seed(seed)
 	curses.wrapper(game, num_ships, sky_height, num_missiles, speed, no_help)
 
 def main():
@@ -552,8 +554,9 @@ def main():
 	parser.add_argument("--missiles", type=int, default=2, metavar="", help="the number of missiles of each ship (will be overwritten unless the difficulty is set to custom)")
 	parser.add_argument("--speed", type=float, default=1.0, metavar="", help="the countdown for movement decisions and the amount of time enemies and bullets require to move in seconds (will be overwritten unless the difficulty is set to custom)")
 	parser.add_argument("--no_help", action="store_true", help="deactivate help")
+	parser.add_argument("--seed", type=int, help="random seed for reproducibility")
 	args = parser.parse_args()
-	run(args.difficulty, args.ships, args.sky, args.missiles, args.speed, args.no_help)
+	run(args.difficulty, args.ships, args.sky, args.missiles, args.speed, args.no_help, args.seed)
 
 if __name__ == "__main__":
 	main()
